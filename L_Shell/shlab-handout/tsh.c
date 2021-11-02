@@ -199,15 +199,12 @@ void eval(char *cmdline)
     // 在创建子进程之前，先屏蔽所有的信号
     sigset_t mask_all, prev_all;
     sigfillset(&mask_all);
-    // sigemptyset(&mask_one);
-    // sigaddset(&mask_one, SIGCHLD);
     // 阻塞掉所有的信号，将原始的mask存到prev_all中
     sigprocmask(SIG_BLOCK, &mask_all, &prev_all);
     pid_t pid = fork();
     if (pid < 0)
     {
         printf("fork error!\n");
-        // fflush(stdout);
         // 恢复之前的mash
         sigprocmask(SIG_BLOCK, &prev_all, NULL);
         return;
@@ -223,7 +220,6 @@ void eval(char *cmdline)
         if (errno == ENOENT) {
             printf("%s: Command not found\n", argv[0]);
         }
-        // fflush(stdout);
         exit(0);
     }
     int add_suc;
@@ -233,7 +229,6 @@ void eval(char *cmdline)
         add_suc = addjob(jobs, pid, BG, cmdline);
         // 放到后台之后打印一个消息
         printf("[%d] (%d) %s", pid2jid(pid), pid, cmdline);
-        // fflush(stdout);
     }
     else
     {
@@ -365,6 +360,7 @@ void do_bgfg(char **argv)
         return;
     }
 
+    // 找到要执行的pid
     int pid = 0;
     if (use_jid) {
         for (int i = 0; i < MAXJOBS; ++i) {
@@ -378,9 +374,6 @@ void do_bgfg(char **argv)
             return;
         }
     } else {
-        // printf("%d %d\n", pid, id);
-        // fflush(stdout);
-        // fflush(stdout);
         for (int i = 0; i < MAXJOBS; ++i) {
             if (jobs[i].pid == id) {
                 pid = id;
@@ -393,14 +386,10 @@ void do_bgfg(char **argv)
         }
     }
 
-    // printf("aaa\n");
-    // printf("%d, %d\n", bg, pid);
-    // fflush(stdout);
-    // fflush(stdout);
-
+    // 发送信号
     kill(-pid, SIGCONT);
 
-    // printf("%d\n", bg);
+    // 修改状态
     struct job_t *job = getjobpid(jobs, pid);
     job->state = bg ? BG : FG;
 
@@ -467,6 +456,7 @@ void sigchld_handler(int sig)
             struct job_t *job = getjobpid(jobs, pid);
             job->state = ST;
         } else if (WIFCONTINUED(statusp)) {
+            // 进程得到某个信号继续运行
             struct job_t *job = getjobpid(jobs, pid);
             if (job->state == ST) job->state = BG;
         }
