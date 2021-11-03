@@ -16,6 +16,14 @@ void clienterror(int fd, char *cause, char *errnum,
 int read_requesthdrs(rio_t *rp, String *requesthdrs, char *host);
 void get_port(char *host, char *port);
 
+void sigchld_handler(int sig) {
+
+    while (waitpid(-1, NULL, WNOHANG) > 0) {
+        ;
+    }
+    return;
+
+}
 
 
 /*
@@ -123,7 +131,12 @@ void startServer(int argc, char* argv[]) {
         Getnameinfo((SA *) &clientaddr, clientlen, hostname, MAXLINE,
                     port, MAXLINE, 0);
         printf("Accepted connection from (%s, %s)\n", hostname, port);
-	process_one_connect(connfd);                                             //line:netp:tiny:doit
+    if(Fork() == 0) {
+        Close(listenfd);
+        process_one_connect(connfd);
+        exit(0);
+    }
+    Close(connfd);
 
     }
 }
@@ -253,6 +266,10 @@ void get_port(char *host, char *port) {
 
 int main(int argc, char* argv[])
 {
+
+    // 回收结束的子进程，避免大量的僵尸进程
+    Signal(SIGCHLD, sigchld_handler);
+
     startServer(argc, argv);
     return 0;
 }
