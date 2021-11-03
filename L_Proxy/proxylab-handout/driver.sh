@@ -2,13 +2,13 @@
 #
 # driver.sh - This is a simple autograder for the Proxy Lab. It does
 #     basic sanity checks that determine whether or not the code
-#     behaves like a concurrent caching proxy. 
+#     behaves like a concurrent caching proxy.
 #
 #     David O'Hallaron, Carnegie Mellon University
 #     updated: 2/8/2016
-# 
+#
 #     usage: ./driver.sh
-# 
+#
 
 # Point values
 MAX_BASIC=40
@@ -61,7 +61,7 @@ function download_proxy {
 #
 function download_noproxy {
     cd $1
-    curl --max-time ${TIMEOUT} --silent --output $2 $3 
+    curl --max-time ${TIMEOUT} --silent --output $2 $3
     (( $? == 28 )) && echo "Error: Fetch timed out after ${TIMEOUT} seconds"
     cd $HOME_DIR
 }
@@ -102,7 +102,7 @@ function wait_for_port_use() {
 
 
 #
-# free_port - returns an available unused TCP port 
+# free_port - returns an available unused TCP port
 #
 function free_port {
     # Generate a random port in the range [PORT_START,
@@ -110,7 +110,7 @@ function free_port {
     # students are running the driver on the same machine.
     port=$((( RANDOM % ${MAX_RAND}) + ${PORT_START}))
 
-    while [ TRUE ] 
+    while [ TRUE ]
     do
         portsinuse=`netstat --numeric-ports --numeric-hosts -a --protocol=tcpip \
             | grep tcp | cut -c21- | cut -d':' -f2 | cut -d' ' -f1 \
@@ -133,7 +133,7 @@ function free_port {
 
 
 #######
-# Main 
+# Main
 #######
 
 ######
@@ -146,14 +146,14 @@ killall -q proxy tiny nop-server.py 2> /dev/null
 
 # Make sure we have a Tiny directory
 if [ ! -d ./tiny ]
-then 
+then
     echo "Error: ./tiny directory not found."
     exit
 fi
 
 # If there is no Tiny executable, then try to build it
 if [ ! -x ./tiny/tiny ]
-then 
+then
     echo "Building the tiny executable."
     (cd ./tiny; make)
     echo ""
@@ -161,7 +161,7 @@ fi
 
 # Make sure we have all the Tiny files we need
 if [ ! -x ./tiny/tiny ]
-then 
+then
     echo "Error: ./tiny/tiny not found or not an executable file."
     exit
 fi
@@ -176,14 +176,14 @@ done
 
 # Make sure we have an existing executable proxy
 if [ ! -x ./proxy ]
-then 
+then
     echo "Error: ./proxy not found or not an executable file. Please rebuild your proxy and try again."
     exit
 fi
 
 # Make sure we have an existing executable nop-server.py file
 if [ ! -x ./nop-server.py ]
-then 
+then
     echo "Error: ./nop-server.py not found or not an executable file."
     exit
 fi
@@ -248,6 +248,8 @@ do
 
     # Compare the two files
     echo "   Comparing the two files"
+    # cat ${PROXY_DIR}/${file}
+    # cat ${NOPROXY_DIR}/${file}
     diff -q ${PROXY_DIR}/${file} ${NOPROXY_DIR}/${file} &> /dev/null
     if [ $? -eq 0 ]; then
         numSucceeded=`expr ${numSucceeded} + 1`
