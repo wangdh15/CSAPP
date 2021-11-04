@@ -1092,6 +1092,14 @@ void freeString(String* str) {
     if (str->data_) free(str->data_);
 }
 
+int cmpString(String *str1, String *str2) {
+    if (str1->size_ != str2->size_) return 0;
+    for (int i = 0; i < str1->size_; ++i) {
+        if (str1->data_[i] != str2->data_[i]) return 0;
+    }
+    return 1;
+}
+
 /* end the string*/
 // void endString(String *str) {
 //     if (str->cap_ == str->size_) str->data_ = (char*)realloc(str->data_, str->cap_ + 1);

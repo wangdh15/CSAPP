@@ -2,12 +2,10 @@
 
 #include "csapp.h"
 
-/* Recommended max cache and object sizes */
-#define MAX_CACHE_SIZE 1049000
-#define MAX_OBJECT_SIZE 102400
-
 /* You won't lose style points for including this long line in your code */
 static const char *user_agent_hdr = "User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.3) Gecko/20120305 Firefox/10.0.3\r\n";
+
+struct Cache cache;
 
 void* process_one_connect(void*);
 void startServer(int, char**);
@@ -60,9 +58,6 @@ void* process_one_connect(void* clientfd) {
     char port[MAXLINE];
     get_port(host, port);
 
-    /* 建立链接 */
-    host_fd = Open_clientfd(host, port);
-
     // 处理uri的内容
     char *new_uri = uri;
     if (strstr(uri, "//")) new_uri = strstr(uri, "//") + 2;
@@ -72,6 +67,22 @@ void* process_one_connect(void* clientfd) {
     else new_uri = NULL;
 
 
+    // 看看是否可以直接从缓存中拿到数据
+    String* host_uri = malloc(sizeof(*host_uri));
+    initString(host_uri);
+    append(host_uri, host, strlen(host));
+    append(host_uri, new_uri ? new_uri : "/", new_uri ? strlen(new_uri) : 1);
+    String* cache_find = findCache(&cache, host_uri);
+    if (cache_find) {
+        Rio_writen(connfd, cache_find->data_, cache_find->size_);
+        Close(connfd);
+        return;
+    }
+
+    // 否则从host请求数据
+
+    /* 建立链接 */
+    host_fd = Open_clientfd(host, port);
     // 发送请求头和请求体
     sprintf(buf, "%s %s %s\r\n", method, new_uri ? new_uri : "/", "HTTP/1.0");
     printf("%s", buf);
@@ -82,8 +93,8 @@ void* process_one_connect(void* clientfd) {
     // 接收服务端发送过来的数据
     Rio_readinitb(&rio_host, host_fd);
     ssize_t readn;
-    String host_cont;
-    initString(&host_cont);
+    String* host_cont = malloc(sizeof(*host_cont));
+    initString(host_cont);
 
     while ((readn = Rio_readnb(&rio_host, buf, MAXLINE)) != 0) {
         if (readn < 0) {
@@ -91,7 +102,7 @@ void* process_one_connect(void* clientfd) {
             break;
         }
         // printf("%d\n", readn);
-        append(&host_cont, buf, (size_t)readn);
+        append(host_cont, buf, (size_t)readn);
     }
     // endString(&host_cont);
     Close(host_fd);
@@ -100,14 +111,15 @@ void* process_one_connect(void* clientfd) {
 
     // 将从host接收的数据全部发送给client
     // printf("%s", host_cont.data_);
-    printf("%d\n", host_cont.size_);
+    printf("%d\n", host_cont->size_);
 
-    Rio_writen(connfd, host_cont.data_, host_cont.size_);
+    Rio_writen(connfd, host_cont->data_, host_cont->size_);
+    putCache(&cache, host_uri, host_cont);
     Close(connfd);
 
 end:
-    freeString(&requesthdrs);
-    freeString(&host_cont);
+//     freeString(&requesthdrs);
+//     freeString(&host_cont);
     return NULL;
 
 }
@@ -267,6 +279,7 @@ int main(int argc, char* argv[])
 
     // 回收结束的子进程，避免大量的僵尸进程
     Signal(SIGCHLD, sigchld_handler);
+    initCache(&cache);
 
     startServer(argc, argv);
     return 0;

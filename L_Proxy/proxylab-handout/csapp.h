@@ -31,8 +31,8 @@
 
 /* Default file permissions are DEF_MODE & ~DEF_UMASK */
 /* $begin createmasks */
-#define DEF_MODE   S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH
-#define DEF_UMASK  S_IWGRP|S_IWOTH
+#define DEF_MODE S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH
+#define DEF_UMASK S_IWGRP | S_IWOTH
 /* $end createmasks */
 
 /* Simplifies calls to bind(), connect(), and accept() */
@@ -43,7 +43,8 @@ typedef struct sockaddr SA;
 /* Persistent state for the robust I/O (Rio) package */
 /* $begin rio_t */
 #define RIO_BUFSIZE 8192
-typedef struct {
+typedef struct
+{
     int rio_fd;                /* Descriptor for this internal buf */
     int rio_cnt;               /* Unread bytes in internal buf */
     char *rio_bufptr;          /* Next unread byte in internal buf */
@@ -56,9 +57,9 @@ extern int h_errno;    /* Defined by BIND for DNS errors */
 extern char **environ; /* Defined by libc */
 
 /* Misc constants */
-#define	MAXLINE	 8192  /* Max text line length */
-#define MAXBUF   8192  /* Max I/O buffer size */
-#define LISTENQ  1024  /* Second argument to listen() */
+#define MAXLINE 8192 /* Max text line length */
+#define MAXBUF 8192  /* Max I/O buffer size */
+#define LISTENQ 1024 /* Second argument to listen() */
 
 /* Our own error-handling functions */
 void unix_error(char *msg);
@@ -106,11 +107,11 @@ ssize_t Read(int fd, void *buf, size_t count);
 ssize_t Write(int fd, const void *buf, size_t count);
 off_t Lseek(int fildes, off_t offset, int whence);
 void Close(int fd);
-int Select(int  n, fd_set *readfds, fd_set *writefds, fd_set *exceptfds,
-	   struct timeval *timeout);
+int Select(int n, fd_set *readfds, fd_set *writefds, fd_set *exceptfds,
+           struct timeval *timeout);
 int Dup2(int fd1, int fd2);
 void Stat(const char *filename, struct stat *buf);
-void Fstat(int fd, struct stat *buf) ;
+void Fstat(int fd, struct stat *buf);
 
 /* Directory wrappers */
 DIR *Opendir(const char *name);
@@ -159,7 +160,7 @@ struct hostent *Gethostbyaddr(const char *addr, int len, int type);
 
 /* Pthreads thread control wrappers */
 void Pthread_create(pthread_t *tidp, pthread_attr_t *attrp,
-		    void * (*routine)(void *), void *argp);
+                    void *(*routine)(void *), void *argp);
 void Pthread_join(pthread_t tid, void **thread_return);
 void Pthread_cancel(pthread_t tid);
 void Pthread_detach(pthread_t tid);
@@ -176,8 +177,8 @@ void V(sem_t *sem);
 ssize_t rio_readn(int fd, void *usrbuf, size_t n);
 ssize_t rio_writen(int fd, void *usrbuf, size_t n);
 void rio_readinitb(rio_t *rp, int fd);
-ssize_t	rio_readnb(rio_t *rp, void *usrbuf, size_t n);
-ssize_t	rio_readlineb(rio_t *rp, void *usrbuf, size_t maxlen);
+ssize_t rio_readnb(rio_t *rp, void *usrbuf, size_t n);
+ssize_t rio_readlineb(rio_t *rp, void *usrbuf, size_t maxlen);
 
 /* Wrappers for Rio package */
 ssize_t Rio_readn(int fd, void *usrbuf, size_t n);
@@ -194,9 +195,10 @@ int open_listenfd(char *port);
 int Open_clientfd(char *hostname, char *port);
 int Open_listenfd(char *port);
 
-
+/*  String */
 // simple string implement
-struct mystring {
+struct mystring
+{
     char *data_;
     size_t cap_;
     size_t size_;
@@ -207,12 +209,37 @@ typedef struct mystring String;
 /* init the String */
 void initString(String *str);
 /* append data to str*/
-void append(String *str, const char* data, size_t len);
+void append(String *str, const char *data, size_t len);
 /* free String*/
 void freeString(String *str);
 /* end the string*/
 void endString(String *str);
+int cmpString(String *str1, String *str2);
 
+#define BUCKETNUM 13
+/* Recommended max cache and object sizes */
+#define MAX_CACHE_SIZE 1049000
+#define MAX_OBJECT_SIZE 102400
+
+/* Cache */
+struct CacheNode
+{
+    struct CacheNode *prev, *next;
+    String *key;
+    String *val;
+};
+
+struct Cache
+{
+    struct CacheNode bucket[BUCKETNUM];
+    pthread_mutex_t locks[BUCKETNUM];
+    size_t all_size;
+};
+
+void initCache(struct Cache *);
+uint64_t hashString(String *);
+String *findCache(struct Cache *, String *);
+void putCache(struct Cache* cache, String *key, String *val);
 
 #endif /* __CSAPP_H__ */
 /* $end csapp.h */
