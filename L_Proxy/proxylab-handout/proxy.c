@@ -9,7 +9,7 @@
 /* You won't lose style points for including this long line in your code */
 static const char *user_agent_hdr = "User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.3) Gecko/20120305 Firefox/10.0.3\r\n";
 
-void process_one_connect(int);
+void* process_one_connect(void*);
 void startServer(int, char**);
 void clienterror(int fd, char *cause, char *errnum,
 		 char *shortmsg, char *longmsg);
@@ -29,8 +29,9 @@ void sigchld_handler(int sig) {
 /*
  * process one connect.
  */
-void process_one_connect(int connfd) {
+void* process_one_connect(void* clientfd) {
 
+    int connfd = (int)clientfd;
     struct stat sbuf;
     char buf[MAXLINE], method[MAXLINE], uri[MAXLINE], version[MAXLINE];
     rio_t rio, rio_host;
@@ -107,6 +108,7 @@ void process_one_connect(int connfd) {
 end:
     freeString(&requesthdrs);
     freeString(&host_cont);
+    return NULL;
 
 }
 
@@ -131,13 +133,9 @@ void startServer(int argc, char* argv[]) {
         Getnameinfo((SA *) &clientaddr, clientlen, hostname, MAXLINE,
                     port, MAXLINE, 0);
         printf("Accepted connection from (%s, %s)\n", hostname, port);
-    if(Fork() == 0) {
-        Close(listenfd);
-        process_one_connect(connfd);
-        exit(0);
-    }
-    Close(connfd);
-
+    pthread_t pid;
+    Pthread_create(&pid, NULL, process_one_connect, connfd);
+    Pthread_detach(pid);
     }
 }
 
